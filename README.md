@@ -110,3 +110,63 @@ az webapp create --resource-group rg-az204-day1 --plan myplan --name mywebapp-rl
 - Use Load testing tool (or just refresh many times) to trigger.
 
 **What to Observe:** After swap, production shows v2. Check logs in **Diagnose and solve problems** → **Availability**.
+
+
+
+# Part 2: Azure Functions (Second most tested)
+
+## How Azure Functions Works (Deep)
+Functions is event-driven serverless. You write only the code that matters — Azure runs it when an event happens.
+
+### Core Flow:
+1. Trigger fires (e.g., HTTP request, new blob).
+2. Runtime executes your function.
+3. Bindings inject data (no SDK calls needed for common cases).
+
+### Hosting Plans (Exam killer):
+| Plan | Scaling | Max Duration | Cold Start | VNet | Cost Model | Exam Scenario |
+|------|---------|--------------|------------|------|------------|---------------|
+| Consumption | Event-driven | 10 min | Yes | No | Per execution | Sporadic jobs |
+| Premium | Pre-warmed | 60 min | No | Yes | Always-on instances | Long-running, low latency |
+| App Service | Manual | Unlimited | No | Yes | Fixed | When you already have a plan |
+
+### Triggers & Bindings (Memorize these):
+* **Triggers:** HTTP, Timer (`0 0 * * * *` = hourly), Blob, Queue, CosmosDB (change feed), Service Bus, Event Grid.
+* **Bindings:** Input (read), Output (write) — e.g., blob output binding writes to storage without code.
+* **Durable Functions:** For workflows (orchestrator + activities). State is stored in Azure Storage.
+
+ [Triggers & Bindings](https://notes.kodekloud.com/docs/AZ-204-Developing-Solutions-for-Microsoft-Azure/Developing-Azure-Functions/Triggers-and-Bindings/page)
+
+[How Functions Runtime Works](https://learn.microsoft.com/en-us/azure/azure-functions/functions-custom-handlers)
+
+## Real Exam Questions
+**Q4:** Your function processes 2 GB files and takes 25 minutes. Which plan?  
+**Answer:** Premium (Consumption max 10 min).
+
+**Q5 (Code):**
+```csharp
+[FunctionName("ProcessBlob")]
+public static void Run(
+    [BlobTrigger("input/{name}")] string myBlob,  // Trigger
+    [Blob("output/{name}")] out string outputBlob) // Output binding
+```
+
+## Practical Lab: Functions (60 min)
+
+### 1. Create Function App
+Portal: Search "Function Apps" → Create → Consumption plan → .NET 8.
+
+### 2. HTTP Trigger Experiment
+* In VS Code: Install Azure Functions extension → Create new project → HTTP trigger.
+* Deploy → Test in portal (copy function URL).
+
+### 3. Blob Trigger + Binding
+* Create new function: Blob trigger.
+* Upload a file to the linked storage container.
+* Experiment: Change binding to output to a Queue — see message appear.
+
+### 4. Timer Trigger
+* CRON: `0 */5 * * * *` (every 5 min).
+* Run and check logs.
+
+**Experiment:** Switch to Premium plan (scale out) → notice no cold start.
