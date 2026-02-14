@@ -38,10 +38,10 @@ Azure App Service is PaaS (Platform as a Service). You upload code (or a contain
 **Diagnostics:** Built-in logging to Blob, Application Insights, or Log Analytics.
 
 ### Visual: Architecture Diagram
-[Planning the architecture of your web application | by Lennart Svensson | Medium](https://medium.com)
+[Azure App Service Architecture](https://medium.com/@lnnrtsvnssn/planning-the-architecture-of-your-web-application-6e73e94942d5)
 
 ### Visual: Deployment Slots (Blue-Green Deployment)
-[Blue Green Deployment with Azure App Service Deployment Slots using Azure DevOps | by Sahitya Pai | Capgemini Microsoft Blog | Medium](https://medium.com)
+[Blue Green Deployment with Azure App Service Deployment Slots using Azure DevOps | by Sahitya Pai | Capgemini Microsoft Blog | Medium](https://medium.com/capgemini-microsoft-team/blue-green-deployment-with-azure-app-service-deployment-slots-using-azure-devops-f06583386178)
 
 ---
 
