@@ -2,144 +2,111 @@
 
 This is aggressive but realistic for someone with dev experience. 6–8 hours/day. If you're new to Azure, stretch to 10-15 days.
 
-Daily Routine:
-2h → Microsoft Learn modules + notes
-2h → Hands-on labs (free Azure account – $200 credit)
-1h → Practice questions (20–30)
-30min → Review mistakes + Anki flashcards (key commands, when-to-use)
+## Part 1: Azure App Service Web Apps (Most tested in compute domain)
 
+### How Azure App Service Works (Deep Mechanics)
 
-## 📅 Study Breakdown
+Azure App Service is PaaS (Platform as a Service). You upload code (or a container), and Azure handles everything else: VMs, OS patching, load balancing, SSL, etc.
 
----
+**Under the hood:**
+- Your app runs inside an **App Service Plan** — this is a pool of VMs (shared in lower tiers, dedicated in higher).
+- Each web app is isolated in its own sandbox (worker process).
+- When you scale out, Azure spins up more worker processes across the plan.
+- **Always On** feature keeps the app warm (prevents cold starts in Free/Shared).
 
-## 🟦 Day 1 – Compute (25–30%)
+### Key Concepts:
 
-Focus on core compute services and deployment strategies.
+**Plans & Tiers:**
 
-### 🎯 Topics
-- Azure App Service  
-- Azure Functions  
-- Azure Container Apps  
+| Tier | Scaling | Slots | VNet Integration | Exam Use Case |
+|------|---------|-------|------------------|---------------|
+| Free/Shared | No | No | No | Dev/test only |
+| Basic | Manual scale up | No | No | Small apps |
+| Standard | Auto-scale out + up | Yes (5 slots) | Yes | Most exam scenarios |
+| Premium | Advanced auto-scale | More slots | Yes + Private Endpoints | Production with high traffic |
 
-### 🛠 Key Activities
-- Deploy a Web App using App Service  
-- Create and deploy an Azure Function  
-- Deploy a containerized app to Azure Container Apps  
+**Deployment Slots (HUGE on exam — 30% of App Service questions):**
+- Slots are separate instances of your app (prod, staging, dev).
+- Deploy to staging → test → swap to production (zero downtime).
+- During swap: Azure warms up the target slot first, then swaps routing.
+- Settings: **Slot settings** (e.g., connection strings) stay with the slot and don't swap.
 
-### 📚 Resources
-- Microsoft Learn learning paths  
-- Deploy a web app + function + Azure Container App (hands-on)
+**Scaling:**
+- **Scale up**: Bigger VM (more CPU/RAM).
+- **Scale out**: More instances (rules based on CPU, memory, HTTP queue, custom metrics).
 
----
+**Diagnostics:** Built-in logging to Blob, Application Insights, or Log Analytics.
 
-## 🟦 Day 2 – Storage (15–20%)
+### Visual: Architecture Diagram
+[Planning the architecture of your web application | by Lennart Svensson | Medium](https://medium.com)
 
-Focus on structured and unstructured data storage.
-
-### 🎯 Topics
-- Azure Blob Storage  
-- Azure Cosmos DB  
-
-### 🛠 Key Activities
-- SDK labs (C#/.NET or Python)  
-- Implement lifecycle management policies  
-- Perform CRUD operations in Cosmos DB  
-
-### 📚 Resources
-- Azure SDK documentation  
-- Microsoft Learn storage modules  
+### Visual: Deployment Slots (Blue-Green Deployment)
+[Blue Green Deployment with Azure App Service Deployment Slots using Azure DevOps | by Sahitya Pai | Capgemini Microsoft Blog | Medium](https://medium.com)
 
 ---
 
-## 🟦 Day 3 – Security (15–20%)
+## Real Exam Questions Asked (2026 Patterns)
 
-Understand identity, secrets, and secure app communication.
+From recent exams (ExamTopics, Reddit, Tutorials Dojo Feb 2026 reports):
 
-### 🎯 Topics
-- Microsoft Entra ID  
-- Azure Key Vault  
-- Managed Identities  
+**Q1 (Very Common):**
+> You have an Azure App Service web app named app1 in the Basic pricing tier. You need to create a deployment slot for testing. What should you do first?
+> 
+> A) Scale up the App Service plan  
+> B) Create a new App Service plan  
+> C) Enable Always On  
+> D) Add a custom domain
+> 
+> **Correct: A**  
+> **Why?** Slots require Standard tier minimum. Scale up first.
 
-### 🛠 Key Activities
-- Secure an Azure Function or App Service  
-- Store and retrieve secrets from Key Vault  
-- Replace connection strings with Managed Identity  
+**Q2:**
+> Your app needs zero-downtime deployment and traffic routing (10% to new version).
+> 
+> **Answer:** Use deployment slots + Traffic Routing in the portal (or CLI: `az webapp traffic-routing`).
 
-### 📚 Resources
-- Microsoft Learn security paths  
-- Identity configuration labs  
-
----
-
-## 🟦 Day 4 – Connect (Part 1) (20–25%)
-
-Focus on API exposure and event-driven architecture.
-
-### 🎯 Topics
-- Azure API Management  
-- Azure Event Grid  
-- Azure Event Hubs  
-
-### 🛠 Key Activities
-- Build and publish an API  
-- Create an event-driven flow  
-- Integrate Event Grid with Azure Functions  
-
-### 📚 Resources
-- Microsoft Learn integration modules  
-- Event-driven architecture documentation  
+**Q3 (Code Snippet):**
+> Which setting makes a connection string slot-specific?
+> 
+> **Answer:** `WEBSITE_SLOT_STICKY` or mark as **Deployment slot setting** in Configuration.
 
 ---
 
-## 🟦 Day 5 – Connect (Part 2) + Monitor (25–35%)
+## Practical Lab: Experiment with App Service (45–60 min)
 
-Messaging systems and observability.
+### 1. Create the App
 
-### 🎯 Topics
-- Azure Service Bus  
-- Azure Storage Queues  
-- Application Insights  
+**Portal:**
+- Search "App Services" → Create
+- Resource Group: `rg-az204-day1`
+- Name: `mywebapp-rl` (unique)
+- Publish: Code
+- Runtime: .NET 8 (or Node if you prefer)
+- Plan: Create new → Standard S1
 
-### 🛠 Key Activities
-- Implement queue-based communication  
-- Build a full messaging pipeline  
-- Enable logging, metrics, and distributed tracing  
+**CLI alternative:**
+```bash
+az appservice plan create --name myplan --resource-group rg-az204-day1 --sku S1
+az webapp create --resource-group rg-az204-day1 --plan myplan --name mywebapp-rl
+```
 
-### 📚 Resources
-- Azure messaging documentation  
-- Application Insights labs  
+### 2. Deploy Code (Quick way)
 
----
+- Go to your web app → **Deployment Center** → **GitHub** → Connect your repo (use a simple ASP.NET or Node sample).
+- **Or:** Download sample from Microsoft → zip it → **Advanced Tools (Kudu)** → Drag & drop zip.
 
-## 🟦 Day 6 – Full Review + Labs
+### 3. Create & Test Deployment Slot (Core experiment)
 
-Apply everything together in a real-world scenario.
+- In web app → **Deployment slots** → **Add Slot** → Name: `staging`
+- Deploy a different version to staging (change the homepage text to "STAGING v2").
+- **Test:** Go to `mywebapp-rl-staging.azurewebsites.net`
+- **Swap:** Click Swap → Production. Watch zero downtime.
+- **Experiment:** Add a slot-specific setting (Configuration → Add connection string → Check "Deployment slot setting").
 
-### 🛠 Key Activities
-- Build one complete end-to-end application  
-  - API → Service Bus → Function → Storage  
-- Work on broken lab scenarios  
-- Debug authentication and integration issues  
+### 4. Autoscaling Experiment
 
-### 📚 Resources
-- GitHub AZ-204 labs  
-- Microsoft Learn sandbox  
+- Go to **Scale out** → Enable autoscale.
+- **Rule:** CPU > 70% → Add 1 instance.
+- Use Load testing tool (or just refresh many times) to trigger.
 
----
-
-## 🟦 Day 7 – Mock Exams + Weak Areas
-
-Simulate real exam pressure.
-
-### 🛠 Key Activities
-- Take 2–3 full timed practice tests  
-- Analyze weak domains  
-- Revise incorrect concepts  
-
-### 📚 Resources
-- Microsoft free practice assessment  
-- Tutorials Dojo  
-- Whizlabs  
-
----
+**What to Observe:** After swap, production shows v2. Check logs in **Diagnose and solve problems** → **Availability**.
