@@ -170,3 +170,165 @@ Portal: Search "Function Apps" → Create → Consumption plan → .NET 8.
 * Run and check logs.
 
 **Experiment:** Switch to Premium plan (scale out) → notice no cold start.
+
+# Azure Container Service 
+
+## Azure Container Registry (ACR)
+
+Azure Container Registry is a fully managed, private registry service in Azure for storing and managing Docker container images and other OCI (Open Container Initiative) artifacts. It's essentially Azure's equivalent to Docker Hub but with enterprise-grade features, security, and integration with other Azure services. ACR allows you to build, store, and distribute container images securely within your Azure environment, making it ideal for CI/CD pipelines in development workflows.
+
+#### Key Components and How It Works
+1. **Registry Structure**:
+   - ACR is organized into repositories, similar to Docker Hub. Each repository can hold multiple images, tagged with versions (e.g., `myapp:v1`).
+   - Supports OCI artifacts beyond just Docker images, such as Helm charts or other container-related files.
+
+2. **Tiers and Pricing**:
+   - Available in Basic, Standard, and Premium tiers.
+     - **Basic**: For small-scale testing, limited storage and throughput.
+     - **Standard**: Adds replication and higher performance.
+     - **Premium**: Includes geo-replication (automatic syncing across regions for high availability), content trust (signed images), and vulnerability scanning via Microsoft Defender for Containers.
+   - Billing is based on storage used and data transfer.
+
+3. **Building Images with ACR Tasks**:
+   - ACR Tasks is a built-in feature for building container images directly in the cloud, without needing a local Docker daemon.
+   - You can trigger tasks manually, on a schedule, or via webhooks (e.g., from GitHub commits).
+   - Supports multi-step tasks defined in YAML (e.g., build, test, push).
+   - Example workflow: Commit code to Git → ACR Task builds image → Push to registry.
+
+4. **Security and Access Control**:
+   - Integrates with Azure Active Directory (AAD) for authentication.
+   - Use managed identities or service principals for secure access from services like Azure DevOps or AKS (Azure Kubernetes Service).
+   - Features like private endpoints and VNet integration prevent public exposure.
+   - Content trust ensures images are signed and verified before deployment.
+   - Built-in vulnerability scanning (in Premium) integrates with Microsoft Defender to detect issues in images.
+
+5. **Integration with Other Azure Services**:
+   - Seamless with Azure Kubernetes Service (AKS), Azure Web Apps for Containers, and Azure DevOps for CI/CD.
+   - Use with Azure Container Instances (ACI) or Azure Container Apps (ACA) for pulling images directly.
+   - Geo-replication ensures low-latency pulls from global locations.
+
+6. **Use Cases for AZ-204 Exam**:
+   - In the exam, expect scenarios on creating ACR, pushing/pulling images via Azure CLI/PowerShell (e.g., `az acr create`, `docker push`), setting up tasks for automated builds, and securing registries.
+   - Common question: How to integrate ACR with AKS for private image pulls using managed identities.
+
+#### Hands-On Example (via Azure CLI)
+To create an ACR and push an image:
+```
+az acr create --resource-group myGroup --name myACR --sku Basic
+docker login myACR.azurecr.io --username <username> --password <password>
+docker tag myimage:latest myACR.azurecr.io/myimage:latest
+docker push myACR.azurecr.io/myimage:latest
+```
+
+## Azure Container Instances (ACI)
+
+Azure Container Instances is a serverless compute service that allows you to run containers on-demand without provisioning or managing underlying infrastructure like VMs or orchestrators (e.g., no Kubernetes needed). It's designed for quick, isolated container execution, making it suitable for bursty workloads, testing, or simple apps that don't require complex scaling.
+
+#### Key Components and How It Works
+1. **Container Groups**:
+   - The core unit in ACI is a "container group," which is like a pod in Kubernetes. It can include one or more containers that share the same lifecycle, network, and storage.
+   - Containers in a group can communicate via localhost and share volumes.
+
+2. **Deployment and Runtime**:
+   - Deploy via Azure Portal, CLI, ARM templates, or SDKs.
+   - Specify CPU, memory, image from ACR/Docker Hub, ports, environment variables, and volumes.
+   - ACI runs on Azure's hypervisor-isolated infrastructure for security (each group is isolated).
+   - No persistent state by default; use Azure Files or other storage for persistence.
+
+3. **Networking and Exposure**:
+   - Public IP assignment for internet-facing containers.
+   - Supports VNet integration for private networking (e.g., connect to Azure SQL without public exposure).
+   - Load balancing via Azure Load Balancer or Application Gateway (manual setup required).
+
+4. **Scaling and Management**:
+   - No built-in auto-scaling; it's for on-demand runs. Scale manually by creating more instances.
+   - Restart policies: Always, OnFailure, Never.
+   - Monitoring via Azure Monitor (logs, metrics like CPU usage).
+
+5. **Limitations**:
+   - Not for long-running, stateful apps (better for stateless or short-lived tasks).
+   - Max 60 GB storage per group, limited GPU support.
+
+6. **Integration with Other Azure Services**:
+   - Pull images from ACR.
+   - Use with Logic Apps or Azure Functions for event-driven triggers.
+   - Can be orchestrated lightly with Azure Container Apps or AKS for more complex scenarios.
+
+7. **Use Cases for AZ-204 Exam**:
+   - Exam focuses on deploying ACI for quick container runs, e.g., batch jobs or dev/testing.
+   - Questions on YAML deployment specs, securing with managed identities, and integrating storage.
+   - Scenario: Run a containerized script to process data without managing VMs.
+
+#### Hands-On Example (via Azure CLI)
+Deploy a simple container:
+```
+az container create --resource-group myGroup --name myACI --image mcr.microsoft.com/hello-world --dns-name-label myaci --ports 80
+```
+
+## Azure Container Apps (ACA)
+
+Azure Container Apps is a serverless container platform built on top of Kubernetes (using Azure Kubernetes Service under the hood but abstracted away). It's designed for microservices and event-driven apps, offering automatic scaling, revisions, and integrations without requiring Kubernetes expertise. ACA is the "modern favorite" for serverless containers in Azure, evolving from ACI with more advanced features.
+
+#### Key Components and How It Works
+1. **Environments and Apps**:
+   - **Container App Environment**: A secure boundary for apps, providing networking (VNet support), logging, and Dapr integration.
+   - **Container Apps**: Individual apps deployed as containers. Each app can have multiple revisions.
+
+2. **Scaling with KEDA**:
+   - Uses Kubernetes Event-Driven Autoscaling (KEDA) for zero-to-many scaling.
+   - Scalers: HTTP traffic, CPU/memory, queues (e.g., Azure Service Bus, Kafka), custom metrics.
+   - Min replicas can be 0 for cost savings; scales up on triggers.
+
+3. **Revisions and Deployments**:
+   - Supports revisions like deployment slots in App Service—deploy new versions without downtime.
+   - Traffic splitting: Route percentages to different revisions (e.g., 90% to stable, 10% to new).
+   - Rollback to previous revisions easily.
+
+4. **Dapr Integration**:
+   - Distributed Application Runtime (Dapr) is built-in for microservices.
+   - Sidecar pattern: Each app gets a Dapr sidecar for service discovery, pub/sub, state management, and secrets.
+   - Enables building resilient apps without coding plumbing.
+
+5. **Networking and Security**:
+   - Internal/external endpoints, mTLS for secure communication.
+   - Integrates with Azure API Management, Application Gateway.
+   - Secrets management via Azure Key Vault.
+
+6. **Monitoring and Logging**:
+   - Built-in with Azure Monitor and Log Analytics.
+   - Observability via OpenTelemetry.
+
+7. **Limitations**:
+   - Abstracts Kubernetes, so no direct access to pods/nodes.
+   - Best for microservices; for full control, use AKS.
+
+8. **Integration with Other Azure Services**:
+   - Pull from ACR.
+   - Event-driven with Azure Event Grid, Service Bus.
+   - Complements Azure Functions for hybrid serverless setups.
+
+9. **Use Cases for AZ-204 Exam**:
+   - Exam emphasizes ACA for modern apps: Configuring scaling rules, using Dapr for microservices, managing revisions.
+   - Scenarios: Build a scalable API with HTTP scaling, or event-driven worker apps.
+   - Key: Understand differences from ACI (ACA is more scalable/orchestrated) and AKS (ACA is serverless).
+
+#### Hands-On Example (via Azure CLI)
+Create an environment and app:
+```
+az containerapp env create --name myEnv --resource-group myGroup --location eastus
+az containerapp create --name myApp --resource-group myGroup --environment myEnv --image myACR.azurecr.io/myimage:latest --target-port 80 --ingress external
+```
+
+### Comparison Table
+
+| Feature                  | ACR (Registry)                          | ACI (Instances)                        | ACA (Apps)                              |
+|--------------------------|-----------------------------------------|----------------------------------------|-----------------------------------------|
+| **Primary Purpose**     | Store and manage container images      | Run single/multiple containers quickly | Serverless microservices with scaling  |
+| **Orchestration**       | None (just storage)                    | None (simple groups)                   | Built-in (Kubernetes-based, abstracted)|
+| **Scaling**             | N/A                                    | Manual                                 | Auto with KEDA (HTTP, queues, etc.)    |
+| **Revisions/Slots**     | Image tags/versions                    | None                                   | Built-in revisions with traffic split  |
+| **Integrations**        | CI/CD, AKS, ACI, ACA                   | Basic (storage, networking)            | Dapr, events, API Mgmt                 |
+| **Use Case**            | Image repository in pipelines          | Quick tests/batch jobs                 | Production microservices               |
+| **Exam Relevance**      | Building/pushing images, security      | On-demand container runs               | Modern serverless, scaling, Dapr       |
+
+For AZ-204 prep, focus on hands-on labs via Azure Portal/CLI, and review official docs for updates. Practice scenarios like integrating these services in a CI/CD pipeline. If you have specific scenarios or questions, let me know!
