@@ -171,7 +171,7 @@ Portal: Search "Function Apps" → Create → Consumption plan → .NET 8.
 
 **Experiment:** Switch to Premium plan (scale out) → notice no cold start.
 
-# Azure Container Service 
+# Part 3: Azure Container Service 
 
 ## Azure Container Registry (ACR)
 
